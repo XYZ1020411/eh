@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>點餐系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .menu-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .menu-item {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 1rem;
+            padding: 1rem;
+            width: 300px;
+            text-align: center;
+        }
+        .menu-item img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        .menu-item h3 {
+            margin: 0.5rem 0;
+        }
+        .menu-item p {
+            color: #666;
+        }
+        .menu-item button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        .menu-item button:hover {
+            background-color: #218838;
+        }
+        .cart-container {
+            padding: 1rem;
+            text-align: center;
+        }
+        .cart-container button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        .cart-container button:hover {
+            background-color: #0056b3;
+        }
+        .admin-panel {
+            padding: 1rem;
+            background-color: #f1f1f1;
+            border-top: 1px solid #ddd;
+        }
+        .admin-panel h2 {
+            text-align: center;
+        }
+        .admin-panel form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .admin-panel input, .admin-panel button {
+            margin: 0.5rem;
+            padding: 0.5rem;
+            width: 80%;
+        }
+        .admin-panel table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .admin-panel table, .admin-panel th, .admin-panel td {
+            border: 1px solid #ddd;
+        }
+        .admin-panel th, .admin-panel td {
+            padding: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>線上點餐系統</h1>
+    </header>
+    <main>
+        <div class="menu-container" id="menu">
+            <!-- 菜單項目將由 JavaScript 加載 -->
+        </div>
+        <div class="cart-container">
+            <input type="text" id="customer-name" placeholder="請輸入您的中文姓名" required>
+            <button onclick="submitOrder()">送出訂單</button>
+        </div>
+        <div class="admin-panel" id="admin-panel" style="display: none;">
+            <h2>後台管理</h2>
+            <form id="add-item-form">
+                <input type="text" id="item-name" placeholder="菜品名稱" required>
+                <input type="text" id="item-description" placeholder="菜品描述" required>
+                <input type="number" id="item-price" placeholder="菜品價格" required>
+                <input type="text" id="item-image" placeholder="菜品圖片 URL" required>
+                <button type="submit">新增菜品</button>
+            </form>
+            <table>
+                <thead>
+                    <tr>
+                        <th>菜品名稱</th>
+                        <th>描述</th>
+                        <th>價格</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-menu">
+                    <!-- 後台菜單將由 JavaScript 加載 -->
+                </tbody>
+            </table>
+        </div>
+        <div id="login-panel">
+            <h2>後台登入</h2>
+            <input type="text" id="username" placeholder="帳號" required>
+            <input type="password" id="password" placeholder="密碼" required>
+            <button onclick="login()">登入</button>
+        </div>
+    </main>
+
+    <script>
+        const apiUrl = 'http://localhost:3000';
+
+        // 加載菜單數據
+        async function loadMenu() {
+            try {
+                const response = await fetch(`${apiUrl}/menu`);
+                const menuData = await response.json();
+
+                // 客戶端菜單
+                const menuContainer = document.getElementById('menu');
+                menuContainer.innerHTML = '';
+
+                menuData.forEach(item => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'menu-item';
+                    menuItem.innerHTML = `
+                        <img src="${item.image}" alt="${item.name}">
+                        <h3>${item.name}</h3>
+                        <p>${item.description}</p>
+                        <p>價格: NT$${item.price}</p>
+                        <button onclick="addToCart('${item.id}')">加入購物車</button>
+                    `;
+                    menuContainer.appendChild(menuItem);
+                });
+            } catch (error) {
+                console.error('無法加載菜單數據:', error);
+            }
+        }
+
+        // 購物車數據
+        const cart = [];
+
+        // 加入購物車
+        function addToCart(itemId) {
+            if (!cart.includes(itemId)) {
+                cart.push(itemId);
+                alert('商品已加入購物車！');
+            } else {
+                alert('此商品已在購物車中！');
+            }
+        }
+
+        // 送出訂單
+        async function submitOrder() {
+            const customerName = document.getElementById('customer-name').value;
+            if (!customerName) {
+                alert('請輸入您的中文姓名！');
+                return;
+            }
+
+            if (cart.length === 0) {
+                alert('購物車為空！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ items: cart, customerName }),
+                });
+
+                if (response.ok) {
+                    alert('訂單已成功送出！');
+                    cart.length = 0; // 清空購物車
+                    document.getElementById('customer-name').value = '';
+                } else {
+                    alert('送出訂單失敗，請稍後再試！');
+                }
+            } catch (error) {
+                console.error('送出訂單時發生錯誤:', error);
+            }
+        }
+
+        // 登入後台
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                alert('請輸入帳號和密碼！');
+                return;
+            }
+
+            // 模擬後台登入驗證
+            if (username === 'xyz' && password === 'xyz') {
+                alert('登入成功！');
+                document.getElementById('login-panel').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                loadAdminMenu();
+            } else {
+                alert('帳號或密碼錯誤！');
+            }
+        }
+
+        // 加載後台菜單數據
+        async function loadAdminMenu() {
+            try {
+                const response = await fetch(`${apiUrl}/menu`);
+                const menuData = await response.json();
+
+                const adminMenu = document.getElementById('admin-menu');
+                adminMenu.innerHTML = '';
+
+                menuData.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.name}</td>
+                        <td>${item.description}</td>
+                        <td>${item.price}</td>
+                        <td><button onclick="deleteItem('${item.id}')">刪除</button></td>
+                    `;
+                    adminMenu.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error('無法加載
