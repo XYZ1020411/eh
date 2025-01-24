@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,52 +37,35 @@
             max-width: 100%;
             border-radius: 8px;
         }
-        .menu-item h3 {
+        .menu-item h3, .menu-item p {
             margin: 0.5rem 0;
         }
-        .menu-item p {
-            color: #666;
-        }
-        .menu-item button {
+        .menu-item button, .cart-container button, .admin-panel button {
             background-color: #28a745;
             color: white;
             border: none;
             border-radius: 4px;
             padding: 0.5rem 1rem;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
-        .menu-item button:hover {
+        .menu-item button:hover, .cart-container button:hover, .admin-panel button:hover {
             background-color: #218838;
         }
-        .cart-container {
+        .cart-container, .admin-panel {
             padding: 1rem;
             text-align: center;
-        }
-        .cart-container button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        .cart-container button:hover {
-            background-color: #0056b3;
         }
         .admin-panel {
-            padding: 1rem;
             background-color: #f1f1f1;
             border-top: 1px solid #ddd;
-        }
-        .admin-panel h2 {
-            text-align: center;
         }
         .admin-panel form {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .admin-panel input, .admin-panel button {
+        .admin-panel input {
             margin: 0.5rem;
             padding: 0.5rem;
             width: 80%;
@@ -92,10 +75,8 @@
             border-collapse: collapse;
             margin-top: 1rem;
         }
-        .admin-panel table, .admin-panel th, .admin-panel td {
-            border: 1px solid #ddd;
-        }
         .admin-panel th, .admin-panel td {
+            border: 1px solid #ddd;
             padding: 0.5rem;
             text-align: center;
         }
@@ -106,16 +87,14 @@
         <h1>線上點餐系統</h1>
     </header>
     <main>
-        <div class="menu-container" id="menu">
-            <!-- 菜單項目將由 JavaScript 加載 -->
-        </div>
+        <div class="menu-container" id="menu"></div>
         <div class="cart-container">
             <input type="text" id="customer-name" placeholder="請輸入您的中文姓名" required>
             <button onclick="submitOrder()">送出訂單</button>
         </div>
         <div class="admin-panel" id="admin-panel" style="display: none;">
             <h2>後台管理</h2>
-            <form id="add-item-form">
+            <form id="add-item-form" onsubmit="addItem(event)">
                 <input type="text" id="item-name" placeholder="菜品名稱" required>
                 <input type="text" id="item-description" placeholder="菜品描述" required>
                 <input type="number" id="item-price" placeholder="菜品價格" required>
@@ -131,9 +110,7 @@
                         <th>操作</th>
                     </tr>
                 </thead>
-                <tbody id="admin-menu">
-                    <!-- 後台菜單將由 JavaScript 加載 -->
-                </tbody>
+                <tbody id="admin-menu"></tbody>
             </table>
         </div>
         <div id="login-panel">
@@ -146,14 +123,12 @@
 
     <script>
         const apiUrl = 'http://localhost:3000';
+        const cart = [];
 
-        // 加載菜單數據
         async function loadMenu() {
             try {
                 const response = await fetch(`${apiUrl}/menu`);
                 const menuData = await response.json();
-
-                // 客戶端菜單
                 const menuContainer = document.getElementById('menu');
                 menuContainer.innerHTML = '';
 
@@ -174,10 +149,6 @@
             }
         }
 
-        // 購物車數據
-        const cart = [];
-
-        // 加入購物車
         function addToCart(itemId) {
             if (!cart.includes(itemId)) {
                 cart.push(itemId);
@@ -187,25 +158,17 @@
             }
         }
 
-        // 送出訂單
         async function submitOrder() {
             const customerName = document.getElementById('customer-name').value;
-            if (!customerName) {
-                alert('請輸入您的中文姓名！');
-                return;
-            }
-
-            if (cart.length === 0) {
-                alert('購物車為空！');
+            if (!customerName || cart.length === 0) {
+                alert('請輸入您的中文姓名或購物車為空！');
                 return;
             }
 
             try {
                 const response = await fetch(`${apiUrl}/orders`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ items: cart, customerName }),
                 });
 
@@ -221,7 +184,6 @@
             }
         }
 
-        // 登入後台
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -231,7 +193,6 @@
                 return;
             }
 
-            // 模擬後台登入驗證
             if (username === 'xyz' && password === 'xyz') {
                 alert('登入成功！');
                 document.getElementById('login-panel').style.display = 'none';
@@ -242,12 +203,10 @@
             }
         }
 
-        // 加載後台菜單數據
         async function loadAdminMenu() {
             try {
                 const response = await fetch(`${apiUrl}/menu`);
                 const menuData = await response.json();
-
                 const adminMenu = document.getElementById('admin-menu');
                 adminMenu.innerHTML = '';
 
@@ -261,6 +220,21 @@
                     `;
                     adminMenu.appendChild(row);
                 });
-
             } catch (error) {
-                console.error('無法加載
+                console.error('無法加載後台菜單數據:', error);
+            }
+        }
+
+        function addItem(event) {
+            event.preventDefault();
+            // 新增菜品的邏輯
+        }
+
+        function deleteItem(itemId) {
+            // 刪除菜品的邏輯
+        }
+
+        loadMenu(); // 初始加載菜單
+    </script>
+</body>
+</html>
