@@ -1,290 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>點餐系統</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-        }
-        header {
-            background-color: #333;
-            color: white;
-            padding: 1rem;
-            text-align: center;
-        }
-        .menu-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            padding: 1rem;
-        }
-        .menu-item {
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin: 1rem;
-            padding: 1rem;
-            width: 300px;
-            text-align: center;
-        }
-        .menu-item img {
-            max-width: 100%;
-            border-radius: 8px;
-        }
-        .menu-item h3 {
-            margin: 0.5rem 0;
-        }
-        .menu-item p {
-            color: #666;
-        }
-        .menu-item button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        .menu-item button:hover {
-            background-color: #218838;
-        }
-        .cart-container {
-            padding: 1rem;
-            text-align: center;
-        }
-        .cart-container button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        .cart-container button:hover {
-            background-color: #0056b3;
-        }
-        .admin-panel {
-            padding: 1rem;
-            background-color: #f1f1f1;
-            border-top: 1px solid #ddd;
-        }
-        .admin-panel h2 {
-            text-align: center;
-        }
-        .admin-panel form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .admin-panel input, .admin-panel button {
-            margin: 0.5rem;
-            padding: 0.5rem;
-            width: 80%;
-        }
-        .admin-panel table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .admin-panel table, .admin-panel th, .admin-panel td {
-            border: 1px solid #ddd;
-        }
-        .admin-panel th, .admin-panel td {
-            padding: 0.5rem;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>線上點餐系統</h1>
-    </header>
-    <main>
-        <div class="menu-container" id="menu">
-            <!-- 菜單項目將由 JavaScript 加載 -->
-        </div>
-        <div class="cart-container">
-            <input type="text" id="customer-name" placeholder="請輸入您的中文姓名" required>
-            <button onclick="submitOrder()">送出訂單</button>
-        </div>
-        <div class="admin-panel" id="admin-panel" style="display: none;">
-            <h2>後台管理</h2>
-            <form id="add-item-form">
-                <input type="text" id="item-name" placeholder="菜品名稱" required>
-                <input type="text" id="item-description" placeholder="菜品描述" required>
-                <input type="number" id="item-price" placeholder="菜品價格" required>
-                <button type="submit">新增菜品</button>
-            </form>
-            <table>
-                <thead>
-                    <tr>
-                        <th>菜品名稱</th>
-                        <th>描述</th>
-                        <th>價格</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-menu">
-                    <!-- 後台菜單將由 JavaScript 加載 -->
-                </tbody>
-            </table>
-        </div>
-        <div id="login-panel">
-            <h2>後台登入</h2>
-            <input type="text" id="username" placeholder="帳號" required>
-            <input type="password" id="password" placeholder="密碼" required>
-            <button onclick="login()">登入</button>
-        </div>
-    </main>
-
-    <script>
-        const apiUrl = 'http://localhost:3000';
-
-        // 加載菜單數據
-        async function loadMenu() {
-            try {
-                const response = await fetch(`${apiUrl}/menu`);
-                const menuData = await response.json();
-
-                // 客戶端菜單
-                const menuContainer = document.getElementById('menu');
-                menuContainer.innerHTML = '';
-
-                menuData.forEach(item => {
-                    const menuItem = document.createElement('div');
-                    menuItem.className = 'menu-item';
-                    menuItem.innerHTML = `
-                        <h3>${item.name}</h3>
-                        <p>${item.description}</p>
-                        <p>價格: NT$${item.price}</p>
-                        <button onclick="addToCart('${item.id}')">加入購物車</button>
-                    `;
-                    menuContainer.appendChild(menuItem);
-                });
-            } catch (error) {
-                console.error('無法加載菜單數據:', error);
-            }
-        }
-
-        // 購物車數據
-        const cart = [];
-
-        // 加入購物車
-        function addToCart(itemId) {
-            if (!cart.includes(itemId)) {
-                cart.push(itemId);
-                alert('商品已加入購物車！');
-            } else {
-                alert('此商品已在購物車中！');
-            }
-        }
-
-        // 送出訂單
-        async function submitOrder() {
-            const customerName = document.getElementById('customer-name').value;
-            if (!customerName) {
-                alert('請輸入您的中文姓名！');
-                return;
-            }
-
-            if (cart.length === 0) {
-                alert('購物車為空！');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${apiUrl}/orders`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ items: cart, customerName }),
-                });
-
-                if (response.ok) {
-                    alert('訂單已成功送出！');
-                    cart.length = 0; // 清空購物車
-                    document.getElementById('customer-name').value = '';
-                } else {
-                    alert('送出訂單失敗，請稍後再試！');
-                }
-            } catch (error) {
-                console.error('送出訂單時發生錯誤:', error);
-            }
-        }
-
-        // 登入後台
-        async function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (!username || !password) {
-                alert('請輸入帳號和密碼！');
-                return;
-            }
-
-            // 模擬後台登入驗證
-            if (username === 'xyz' && password === 'xyz') {
-                alert('登入成功！');
-                document.getElementById('login-panel').style.display = 'none';
-                document.getElementById('admin-panel').style.display = 'block';
-                loadAdminMenu();
-            } else {
-                alert('帳號或密碼錯誤！');
-            }
-        }
-
-        // 加載後台菜單數據
-        async function loadAdminMenu() {
-            try {
-                const response = await fetch(`${apiUrl}/menu`);
-                const menuData = await response.json();
-
-                const adminMenu = document.getElementById('admin-menu');
-                adminMenu.innerHTML = '';
-
-                menuData.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.name}</td>
-                        <td>${item.description}</td>
-                        <td>${item.price}</td>
-                        <td><button onclick="deleteItem('${item.id}')">刪除</button></td>
-                    `;
-                    adminMenu.appendChild(row);
-                });
-
-            } catch (error) {
-                console.error('無法加載菜單數據:', error);
-            }
-        }
-
-        // 刪除菜品
-        async function deleteItem(itemId) {
-            try {
-                const response = await fetch(`${apiUrl}/menu/${itemId}`, {
-                    method: 'DELETE',
-                });
-
-                if (response.ok) {
-                    alert('菜品已刪除！');
-                    loadAdminMenu();
-                } else {
-                    alert('刪除菜品失敗，請稍後再試！');
-                }
-            } catch (error) {
-                console.error('刪除菜品時發生錯誤:', error);
-            }
-        }
-
-        // 初始加載
-        loadMenu();
-    </script>
-</body>
+<html lang="zh-tw">
+	<head>
+		<meta charset="utf-8">
+		
+			<title>新竹市東區東園國民小學 - 首頁</title>
+		
+		
+		
+		
+		
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+		
+		
+			<link rel="stylesheet" href="/src/stylesheets/basic.css">
+			<link rel="stylesheet" href="/src/stylesheets/marquee.css">
+		
+		
+			<link rel="stylesheet" href="/pkg_nss/5e2134a8fd724105bd1cf18a/css/theme.css">
+		
+			<link rel="stylesheet" href="/pkg_nss/5e2134a8fd724105bd1cf18a/css/theme-N019.css">
+		
+		<link rel="stylesheet" href="/src/stylesheets/classboard.css">
+		<link rel="stylesheet" href="/src/stylesheets/html-editor.css">
+		<script src="/src/plugins/lodash/lodash.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue.min.js" type="text/javascript" charset="utf-8"></script>
+		<!-- vue plugins -->
+		<script src="/src/plugins/moment-with-locales.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue.axios.js" type="text/javascript" charset="utf-8"></script>
+		<!--script src="/src/plugins/vue/vue-lazyload.js" type="text/javascript" charset="utf-8"></script-->
+		<script src="/src/plugins/vue/vue.sortable.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue.draggable.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-color.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-i18n.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-clipboard.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-uniq-ids.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vuejs-datepicker.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-tour.umd.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-notify.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/Chart.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-chartjs.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/vue/vue-cropper.js" type="text/javascript" charset="utf-8"></script>
+		
+		<link rel="stylesheet" href="/src/ckeditor5/style.css">
+		<link rel="stylesheet" href="/src/ckeditor5/ckeditor5.css">
+		<link rel="stylesheet" href="/src/ckeditor5/plugins/classicimageresize/theme/classic-image-resize.css">
+		<script type="importmap">
+			{
+				"imports": {
+					"ckeditor5": "/src/ckeditor5/ckeditor5.js",
+					"ckeditor5/": "/src/ckeditor5/"
+				}
+			}
+			</script>
+		<script type="module" src="/src/ckeditor5/main.js" type="text/javascript"></script>
+		<script>
+			window.onload = function() {
+				if ( window.location.protocol === "file:" ) {
+					alert( "This sample requires an HTTP server. Please serve this file with a web server." );
+				}
+			};
+		</script>
+		<!-- <script src='/src/ckeditor/ckeditor.js' type="text/javascript"></script> -->
+		
+		<script src="/src/plugins/socket-io/socket.io.v2.1.0.js" type="text/javascript" charset="utf-8"></script>
+		
+		
+		<script src="/src/javascripts/siteserver/exif.js"></script>
+		<!-- js plugins -->
+		<script src="/src/plugins/image-compressor.min.js" type="text/javascript" charset="utf-8" defer></script>
+		<script src="/src/plugins/md5.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/xlsx/xlsx.full.min.js" type="text/javascript" charset="utf-8" defer ></script>
+		<script src="/src/plugins/qrcode/qrcode.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/src/plugins/jspdf.umd.min.js" type="text/javascript" charset="utf-8"></script>
+		<meta name="og:title" content="新竹市東區東園國民小學 - 首頁"/>
+		<meta name="description" content="新竹市東區東園國民小學"/>
+		<meta name="og:description" content="新竹市東區東園國民小學"/>
+		<meta name="keywords" content=""/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=1"/>
+		<meta name="og:image" content="/uploads/1724895417386Pt1THpnS.png"/>
+		<link rel="shortcut icon" type="image/png" href="/uploads/1724895417386Pt1THpnS.png" />
+		<script src="/nss/preload"></script>
+		<script src="/nss/static/script/5dc9931270ad1ee4eb352926/siteserver"></script>
+	</head>
+	<body class="login theme-bg ct-row">
+		
+		<!-- 20181030 Sober - add javascript not enable tips -->
+		<noscript>
+			<h1>Your browser does not support JavaScript!本頁面需要瀏覽器支持（啟用）JavaScript</h1>
+			<h2>新竹東園國小</h2>
+			<!--<hr>
+			    請嘗試使用此<a href="/vm/nss/s/main/p/index" alt="靜態快取頁面" title="靜態快取頁面">連結</a>以瀏覽靜態資源，該資源僅提供於特殊環境下檢視。
+			<hr>-->
+			<h3>相關資訊</h3>
+			<p>連絡電話1: 03-5712496</p>
+			<p>連絡電話2: </p>
+			<p>傳真: 03-5726581</p>
+			<p>地址1: ( 300 ) 新竹市園後街25號</p>
+			<p>地址2: No.25, Yuanhou St., Hsinchu City 300, Taiwan (R.O.C.)</p>
+			<p>服務信箱: </p>
+		</noscript>
+		<div id="app"><theme></theme></div>
+		<script src="/nss/core?v=4"></script>
+	</body>
 </html>
